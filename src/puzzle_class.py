@@ -21,37 +21,59 @@ this class makes an object representing the square:
 """
 
 
+from math import ceil, log10
+
+
 class Square:
     def __init__(self, dimension: int, operations_and_results: list[str]):
         self.dimension = dimension
-        assert dimension * 2 == len(operations_and_results),\
+        self.width = ceil(2 * log10(self.dimension))
+        assert self.dimension * 2 == len(operations_and_results),\
             "There needs to be twice as many equations as the dimension."
-        self.equations = []
+        # First how thick are the columns; we want all same-width.
+        minus = self.dimension - 1
         for row in operations_and_results:
-            self.equations.append((row[:2], row[2:], int(row[2:])))
+            difference = len(row) - minus
+            if difference > self.width:
+                self.width = difference
+        self.equations = []
+        # Because there is one fewer operations than numbers in rows/columns.
+        for row in operations_and_results:
+            offset_ops = [op.rjust(self.width) for op in row[:minus]]
+            result_str = row[minus:].rjust(self.width)
+            self.equations.append((offset_ops, result_str, int(row[minus:])))
         print(self.equations)
 
     def __str__(self):
-        horizontal_split = "+-+-+-+-+-+-+-+\n"
-        final_string = horizontal_split
-        for row_index in range(5):
+        split = "+" + ("-" * self.width + "+") * (2 * self.dimension + 1) + "\n"
+        xs = "X" * self.width
+        spaces = " " * self.width
+        equals = spaces[:-1] + "="
+        final = split
+        for row_index in range(2 * self.dimension - 1):
             quotient, remainder = divmod(row_index, 2)
             if remainder:
-                first = self.equations[3][0][quotient]
-                second = self.equations[4][0][quotient]
-                third = self.equations[5][0][quotient]
-                final_string += f"|{first}|X|{second}|X|{third}|X|X|\n"
+                for index in range(self.dimension, 2 * self.dimension):
+                    final += f"|{self.equations[index][0][quotient]}|"
+                    final += xs
+                final += f"|{xs}|\n"
             else:
-                (op_1, op_2), number, _ = self.equations[quotient]
-                final_string += f"| |{op_1}| |{op_2}| |=|{number}|\n"
-            final_string += horizontal_split
+                for operation in self.equations[quotient][0]:
+                    final += f"|{spaces}|{operation}"
+                final += f"|{spaces}|{equals}|{self.equations[quotient][1]}|\n"
+            final += split
         # Last few lines are different:
-        final_string +=\
-            f"|=|X|=|X|=|X|X|\n+-+-+-+-+-+-+-+\n" \
-            f"|{self.equations[3][1]}|X|{self.equations[4][1]}" \
-            f"|X|{self.equations[5][1]}|X|X|\n+-+-+-+-+-+-+-+\n"
-        return final_string
+        for _ in range(self.dimension):
+            final += f"|{equals}|{xs}"
+        final += f"|{xs}|\n{split}"
+        for index in range(self.dimension, 2 * self.dimension):
+            final += f"|{self.equations[index][1]}|"
+            final += xs
+        final += f"|{xs}|\n{split}"
+        return final
 
 
 if __name__ == '__main__':
-    print(Square(4, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"]))
+    print(Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"]))
+    print(Square(4, ["++-2", "*--15", "+-*96", "--/-1",
+                     "--/-1", "++-4", "*-+25", "+*/9"]))
