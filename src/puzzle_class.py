@@ -43,12 +43,15 @@ class Square:
             result_str = row[minus:].rjust(self.width)
             self.equations.append((offset_ops, result_str, int(row[minus:])))
         print(self.equations)
+        self.entries = [[0 for _ in range(dimension)] for _ in range(dimension)]
+        dim_sq = dimension * dimension + 1
+        self.number_strs = {n: str(n).rjust(self.width) for n in range(dim_sq)}
+        print(self.number_strs)
 
     def __str__(self):
         split = "+" + ("-" * self.width + "+") * (2 * self.dimension + 1) + "\n"
         xs = "X" * self.width
-        spaces = " " * self.width
-        equals = spaces[:-1] + "="
+        equals = " " * (self.width - 1) + "="
         final = split
         for row_index in range(2 * self.dimension - 1):
             quotient, remainder = divmod(row_index, 2)
@@ -58,9 +61,11 @@ class Square:
                     final += xs
                 final += f"|{xs}|\n"
             else:
-                for operation in self.equations[quotient][0]:
-                    final += f"|{spaces}|{operation}"
-                final += f"|{spaces}|{equals}|{self.equations[quotient][1]}|\n"
+                for value, operation in zip(self.entries[quotient],
+                                            self.equations[quotient][0]):
+                    final += f"|{self.number_strs[value]}|{operation}"
+                num_str = self.number_strs[self.entries[quotient][-1]]
+                final += f"|{num_str}|{equals}|{self.equations[quotient][1]}|\n"
             final += split
         # Last few lines are different:
         for _ in range(self.dimension):
@@ -74,6 +79,8 @@ class Square:
 
 
 if __name__ == '__main__':
+    # unknown solution:
     print(Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"]))
+    # 1-16 in row-order:
     print(Square(4, ["++-2", "*--15", "+-*96", "--/-1",
                      "--/-1", "++-4", "*-+25", "+*/9"]))
