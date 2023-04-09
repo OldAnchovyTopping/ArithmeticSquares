@@ -22,7 +22,10 @@ this class makes an object representing the square:
 
 
 class Square:
-    def __init__(self, operations_and_results: list[str]):
+    def __init__(self, dimension: int, operations_and_results: list[str]):
+        self.dimension = dimension
+        assert dimension * 2 == len(operations_and_results),\
+            "There needs to be twice as many equations as the dimension."
         self.equations = []
         for row in operations_and_results:
             self.equations.append((row[:2], row[2:], int(row[2:])))
@@ -34,9 +37,9 @@ class Square:
         for row_index in range(5):
             quotient, remainder = divmod(row_index, 2)
             if remainder:
-                first = _
-                second = _
-                third = _
+                first = self.equations[3][0][quotient]
+                second = self.equations[4][0][quotient]
+                third = self.equations[5][0][quotient]
                 final_string += f"|{first}|X|{second}|X|{third}|X|X|\n"
             else:
                 (op_1, op_2), number, _ = self.equations[quotient]
@@ -51,4 +54,4 @@ class Square:
 
 
 if __name__ == '__main__':
-    print(Square(["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"]))
+    print(Square(4, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"]))
