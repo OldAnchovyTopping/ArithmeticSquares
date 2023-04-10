@@ -144,12 +144,19 @@ class Square:
         return result == self.equations[eq_index][2]  # Check if they match.
 
     def are_all_constraints_satisfied(self) -> bool:
+        """Checks if all rows and columns obey the equations."""
         for i in range(self.dimension):
             if not(self.check_column(i) and self.check_row(i)):
                 return False
         return True
 
     def change_entries(self, new_entries: list[int] | tuple[int]):
+        """
+        Changes all entries.
+
+        :param new_entries: New entries.
+        :return: None
+        """
         assert len(new_entries) == self.dimension ** 2,\
             "Incorrect number of entries"
         increasing = 0
@@ -158,9 +165,22 @@ class Square:
                 self.entries[row_index][column_index] = new_entries[increasing]
                 increasing += 1
 
+    def single_entry_change(self, position: int, value: int):
+        """
+        Changes a single entry.
+
+        :param position: If q*dim + r = position, then entry[q][r] is changed.
+        :param value: The new value.
+        :return: None
+        """
+        assert 0 <= position < self.dimension ** 2, "Position index is too big!"
+        assert 0 <= value <= self.dimension ** 2, "Number value is too big!"
+        quotient, remainder = divmod(position, self.dimension)
+        self.entries[quotient][remainder] = value
+
 
 if __name__ == '__main__':
-    # unknown solution:
+    # [5, 7, 6, 8, 4, 2, 9, 1, 3]:
     first_33 = Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"])
     print(first_33)
     first_33.change_entries([5, 7, 6, 8, 4, 2, 9, 1, 3])
