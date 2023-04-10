@@ -77,6 +77,70 @@ class Square:
         final += f"|{xs}|\n{split}"
         return final
 
+    def check_row_equation(self, index: int) -> bool:
+        """
+        Checks if the index-mentioned row is filled in AND
+        that it satisfies the grid equation.
+
+        :param index: The row_index to look at.
+        :return: Whether the equation evaluated
+            in order matches the given target.
+        """
+        assert index < self.dimension, "Row index too big!"
+        result = self.entries[index][0]
+        if not result:
+            # This entry is not filled in, so false.
+            return False
+        for op, num in zip(self.equations[index][0], self.entries[index][1:]):
+            if not num:
+                # This entry is not filled in, so false.
+                return False
+            match op:
+                case "+":
+                    result += num
+                case "-":
+                    result -= num
+                case "*":
+                    result *= num
+                case "/":
+                    result /= num
+                case _:
+                    raise(ValueError(f"{op} is not one of the four operations"))
+        return result == self.equations[index][2]  # Check if they match.
+
+    def check_column_equation(self, index: int) -> bool:
+        """
+        Checks if the index-mentioned row is filled in AND
+        that it satisfies the grid equation.
+
+        :param index: The  column_index to look at.
+        :return: Whether the equation evaluated
+            in order matches the given target.
+        """
+        assert index < self.dimension, "Column index too big!"
+        result = self.entries[index][0]
+        if not result:
+            # This entry is not filled in, so false.
+            return False
+        for row_index in range(1, self.dimension):
+            number = self.entries[row_index][index]
+            if not number:
+                # This entry is not filled in, so false.
+                return False
+            op= self.equations[row_index][index]
+            match op:
+                case "+":
+                    result += number
+                case "-":
+                    result -= number
+                case "*":
+                    result *= number
+                case "/":
+                    result /= number
+                case _:
+                    raise(ValueError(f"{op} is not one of the four operations"))
+        return result == self.equations[index][2]  # Check if they match.
+
 
 if __name__ == '__main__':
     # unknown solution:
