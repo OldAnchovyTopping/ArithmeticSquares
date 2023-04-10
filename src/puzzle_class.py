@@ -42,11 +42,11 @@ class Square:
             offset_ops = [op.rjust(self.width) for op in row[:minus]]
             result_str = row[minus:].rjust(self.width)
             self.equations.append((offset_ops, result_str, int(row[minus:])))
-        print(self.equations)
+        # print(self.equations)
         self.entries = [[0 for _ in range(dimension)] for _ in range(dimension)]
         dim_sq = dimension * dimension + 1
         self.number_strs = {n: str(n).rjust(self.width) for n in range(dim_sq)}
-        print(self.number_strs)
+        # print(self.number_strs)
 
     def __str__(self):
         split = "+" + ("-" * self.width + "+") * (2 * self.dimension + 1) + "\n"
@@ -77,12 +77,12 @@ class Square:
         final += f"|{xs}|\n{split}"
         return final
 
-    def check_row_equation(self, index: int) -> bool:
+    def check_row(self, index: int) -> bool:
         """
         Checks if the index-mentioned row is filled in AND
         that it satisfies the grid equation.
 
-        :param index: The row_index to look at.
+        :param index: The row index to look at.
         :return: Whether the equation evaluated
             in order matches the given target.
         """
@@ -95,6 +95,7 @@ class Square:
             if not num:
                 # This entry is not filled in, so false.
                 return False
+            op = op[-1]
             match op:
                 case "+":
                     result += num
@@ -108,26 +109,27 @@ class Square:
                     raise(ValueError(f"{op} is not one of the four operations"))
         return result == self.equations[index][2]  # Check if they match.
 
-    def check_column_equation(self, index: int) -> bool:
+    def check_column(self, index: int) -> bool:
         """
         Checks if the index-mentioned row is filled in AND
         that it satisfies the grid equation.
 
-        :param index: The  column_index to look at.
+        :param index: The  column index to look at.
         :return: Whether the equation evaluated
             in order matches the given target.
         """
         assert index < self.dimension, "Column index too big!"
-        result = self.entries[index][0]
+        result = self.entries[0][index]
         if not result:
             # This entry is not filled in, so false.
             return False
+        eq_index = self.dimension + index
         for row_index in range(1, self.dimension):
             number = self.entries[row_index][index]
             if not number:
                 # This entry is not filled in, so false.
                 return False
-            op= self.equations[row_index][index]
+            op = self.equations[eq_index][0][row_index - 1][-1]
             match op:
                 case "+":
                     result += number
@@ -138,13 +140,32 @@ class Square:
                 case "/":
                     result /= number
                 case _:
-                    raise(ValueError(f"{op} is not one of the four operations"))
-        return result == self.equations[index][2]  # Check if they match.
+                    raise(ValueError(f"'{op}' is not in the four operations"))
+        return result == self.equations[eq_index][2]  # Check if they match.
+
+    def are_all_constraints_satisfied(self) -> bool:
+        for i in range(self.dimension):
+            if not(self.check_column(i) and self.check_row(i)):
+                return False
+        return True
+
+    def change_entries(self, new_entries: list[int] | tuple[int]):
+        assert len(new_entries) == self.dimension ** 2,\
+            "Incorrect number of entries"
+        increasing = 0
+        for row_index in range(self.dimension):
+            for column_index in range(self.dimension):
+                self.entries[row_index][column_index] = new_entries[increasing]
+                increasing += 1
 
 
 if __name__ == '__main__':
     # unknown solution:
-    print(Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"]))
+    first_33 = Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"])
+    print(first_33)
+    first_33.change_entries([5, 7, 6, 8, 4, 2, 9, 1, 3])
+    print(first_33)
+    print(first_33.are_all_constraints_satisfied())
     # 1-16 in row-order:
     print(Square(4, ["++-2", "*--15", "+-*96", "--/-1",
                      "--/-1", "++-4", "*-+25", "+*/9"]))
