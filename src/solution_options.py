@@ -16,35 +16,34 @@ def row_recursion(
     # Base case:
     if depth == limit:
         grid.single_entry_change(depth, unused[0])
-        # If the constraints are satisfied, return grid, otherwise None.
-        if grid.are_all_constraints_satisfied():
-            return grid
-        return None
+        return grid if grid.are_all_constraints_satisfied() else None
     row_index, column_index = divmod(depth, grid.dimension)
     for index, new_value in enumerate(unused):
         grid.single_entry_change(depth, new_value)
         if row_index == grid.dimension - 1:
             # Final row, check column!
-            if grid.check_column(column_index):
-                still_unused = unused[:index] + unused[index + 1:]
-                maybe_s = row_recursion(grid, still_unused, depth + 1, limit)
-                if maybe_s is not None:
-                    return maybe_s
+            if not grid.check_column(column_index):
+                continue
         elif column_index == grid.dimension - 1:
             # Final row entry; check the row!
-            if grid.check_row(row_index):
-                still_unused = unused[:index] + unused[index + 1:]
-                maybe_s = row_recursion(grid, still_unused, depth + 1, limit)
-                if maybe_s is not None:
-                    return maybe_s
-        else:
-            # No check required here.
-            still_unused = unused[:index] + unused[index + 1:]
-            maybe_s = row_recursion(grid, still_unused, depth + 1, limit)
-            if maybe_s is not None:
-                return maybe_s
+            if not grid.check_row(row_index):
+                continue
+        # If the checks pass, we recurse:
+        still_unused = unused[:index] + unused[index + 1:]
+        maybe_s = row_recursion(grid, still_unused, depth + 1, limit)
+        if maybe_s is not None:
+            return maybe_s
     grid.single_entry_change(depth, 0)
     return None
+
+
+def ordered_recursion(
+    grid: Square, unused: list[int], tile_order: list[int],
+) -> Square | None:
+    # Base case:
+    if len(unused) == 1:
+        grid.single_entry_change(tile_order[0], unused[0])
+        return grid if grid.are_all_constraints_satisfied() else None
 
 
 if __name__ == '__main__':
