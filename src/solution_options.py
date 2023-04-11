@@ -37,26 +37,21 @@ def row_recursion(
     return None
 
 
-def ordered_recursion(
-    grid: Square, unused: list[int], tile_order: list[int],
-) -> Square | None:
-    # Base case:
-    if len(unused) == 1:
-        grid.single_entry_change(tile_order[0], unused[0])
-        return grid if grid.are_all_constraints_satisfied() else None
+def possibility_collapse(grid: Square) -> Square | None:
+    pass
 
 
 if __name__ == '__main__':
     first_33 = Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"])
-    # print(permutation_bruteforce(first_33))
+    print(permutation_bruteforce(first_33))
     order_16 = Square(4, ["++-2", "*--15", "+-*96", "--/-1",
                           "--/-1", "++-4", "*-+25", "+*/9"])
-    # print(permutation_bruteforce(order_16))
+    print(permutation_bruteforce(order_16))
     small = Square(2, ["+6", "+4", "+7", "+3"])
-    # print(row_recursion(small, [1, 2, 3, 4], 0, 3))
-    # print(row_recursion(first_33, list(range(1, 10)), 0, 8))
+    print(row_recursion(small, [1, 2, 3, 4], 0, 3))
+    print(row_recursion(first_33, list(range(1, 10)), 0, 8))
     column_order_16 = Square(4, ["--/-1", "++-4", "*-+25", "+*/9",
                                  "++-2", "*--15", "+-*96", "--/-1"])
-    # print(row_recursion(column_order_16, list(range(1, 17)), 0, 15))
+    print(row_recursion(column_order_16, list(range(1, 17)), 0, 15))
     gmp_33 = Square(3, ["/*2", "*-1", "+-4", "/*2", "*-1", "-+8"])
     print(row_recursion(gmp_33, list(range(1, 10)), 0, 8))

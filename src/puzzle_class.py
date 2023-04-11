@@ -21,6 +21,7 @@ this class makes an object representing the square:
 """
 
 
+from itertools import combinations, permutations
 from math import ceil, log10
 
 
@@ -36,13 +37,15 @@ class Square:
             difference = len(row) - minus
             if difference > self.width:
                 self.width = difference
+        self.print_data = []
         self.equations = []
         # Because there is one fewer operations than numbers in rows/columns.
         for row in operations_and_results:
             offset_ops = [op.rjust(self.width) for op in row[:minus]]
             result_str = row[minus:].rjust(self.width)
-            self.equations.append((offset_ops, result_str, int(row[minus:])))
-        # print(self.equations)
+            self.print_data.append((offset_ops, result_str, int(row[minus:])))
+            self.equations.append((row[:minus], int(row[minus:])))
+        # Now make lists for the numbers and their pretty-printing counterparts:
         self.entries = [[0 for _ in range(dimension)] for _ in range(dimension)]
         dim_sq = dimension * dimension + 1
         self.number_strs = {n: str(n).rjust(self.width) for n in range(dim_sq)}
@@ -54,25 +57,25 @@ class Square:
         equals = " " * (self.width - 1) + "="
         final = split
         for row_index in range(2 * self.dimension - 1):
-            quotient, remainder = divmod(row_index, 2)
-            if remainder:
+            quot, rem = divmod(row_index, 2)
+            if rem:
                 for index in range(self.dimension, 2 * self.dimension):
-                    final += f"|{self.equations[index][0][quotient]}|"
+                    final += f"|{self.print_data[index][0][quot]}|"
                     final += xs
                 final += f"|{xs}|\n"
             else:
-                for value, operation in zip(self.entries[quotient],
-                                            self.equations[quotient][0]):
+                for value, operation in zip(self.entries[quot],
+                                            self.print_data[quot][0]):
                     final += f"|{self.number_strs[value]}|{operation}"
-                num_str = self.number_strs[self.entries[quotient][-1]]
-                final += f"|{num_str}|{equals}|{self.equations[quotient][1]}|\n"
+                num_str = self.number_strs[self.entries[quot][-1]]
+                final += f"|{num_str}|{equals}|{self.print_data[quot][1]}|\n"
             final += split
         # Last few lines are different:
         for _ in range(self.dimension):
             final += f"|{equals}|{xs}"
         final += f"|{xs}|\n{split}"
         for index in range(self.dimension, 2 * self.dimension):
-            final += f"|{self.equations[index][1]}|"
+            final += f"|{self.print_data[index][1]}|"
             final += xs
         final += f"|{xs}|\n{split}"
         return final
@@ -95,7 +98,6 @@ class Square:
             if not num:
                 # This entry is not filled in, so false.
                 return False
-            op = op[-1]
             match op:
                 case "+":
                     result += num
@@ -107,7 +109,7 @@ class Square:
                     result /= num
                 case _:
                     raise(ValueError(f"{op} is not one of the four operations"))
-        return result == self.equations[index][2]  # Check if they match.
+        return result == self.equations[index][1]  # Check if they match.
 
     def check_column(self, index: int) -> bool:
         """
@@ -129,7 +131,7 @@ class Square:
             if not number:
                 # This entry is not filled in, so false.
                 return False
-            op = self.equations[eq_index][0][row_index - 1][-1]
+            op = self.equations[eq_index][0][row_index - 1]
             match op:
                 case "+":
                     result += number
@@ -141,7 +143,7 @@ class Square:
                     result /= number
                 case _:
                     raise(ValueError(f"'{op}' is not in the four operations"))
-        return result == self.equations[eq_index][2]  # Check if they match.
+        return result == self.equations[eq_index][1]  # Check if they match.
 
     def are_all_constraints_satisfied(self) -> bool:
         """Checks if all rows and columns obey the equations."""
@@ -177,6 +179,40 @@ class Square:
         assert 0 <= value <= self.dimension ** 2, "Number value is too big!"
         quotient, remainder = divmod(position, self.dimension)
         self.entries[quotient][remainder] = value
+
+    def equation_possibilities(self, index):
+        operations, target = self.equations[index]
+        used_numbers = range(1, 1 + self.dimension ** 2)
+        possible_combinations = []
+        for combo in combinations(used_numbers, self.dimension):
+            for eq_entries in permutations(combo):
+                computed_result = eq_entries[0]
+                for operation, number in zip(operations, eq_entries[1:]):
+                    match operation:
+                        case "+":
+                            computed_result += number
+                        case "-":
+                            computed_result -= number
+                        case "*":
+                            computed_result *= number
+                        case "/":
+                            computed_result /= number
+                        case _:
+                            raise (ValueError(f"{operation} is not one of"
+                                              f"the four operations"))
+                if computed_result == target:
+                    possible_combinations.append(eq_entries)
+        tile_possibilities = [set() for _ in range(self.dimension)]
+        for entries in possible_combinations:
+            for index in range(self.dimension):
+                tile_possibilities[index].add(entries[index])
+        return possible_combinations, tile_possibilities
+
+    def options_in_all_equations(self):
+        option_list = []
+        for index in range(2 * self.dimension):
+            option_list.append(self.equation_possibilities(index))
+        return option_list
 
 
 if __name__ == '__main__':
