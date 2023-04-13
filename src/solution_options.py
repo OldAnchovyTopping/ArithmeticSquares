@@ -1,4 +1,5 @@
 from puzzle_class import Square
+from copy import deepcopy
 from itertools import permutations
 
 
@@ -47,7 +48,7 @@ def is_combo_doable(
 
 
 def iterative_deletion(dimension: int, tile_possible: list[set[int]],
-                       combos_and_tiles):
+                       available_combos: list[list[tuple[int]]]):
     dim_squared = dimension * dimension
     # First some index pre-work:
     eq_indices = []
@@ -56,13 +57,14 @@ def iterative_deletion(dimension: int, tile_possible: list[set[int]],
     for i in range(dimension, 2 * dimension):
         eq_indices.append(tuple(range(i-dimension, dim_squared, dimension)))
     # Now we iteratively eliminate possible combos:
-    previous_combos = [combos_and_tiles[i][0] for i in range(2 * dimension)]
+    previous_combos = available_combos[:]
     change_was_made = True
     while change_was_made:
         combos_tiles_together = []
         change_was_made = False
-        print("Start of next iteration")
-        # print(grid_possibilities)
+        # print("Start of next iteration")
+        # print(tile_possible)
+        # print(previous_combos)
         for i, equation in enumerate(previous_combos):
             eq_combos = []
             eq_possible = [set() for _ in range(dimension)]
@@ -83,13 +85,42 @@ def iterative_deletion(dimension: int, tile_possible: list[set[int]],
             tile_possible[index] = r_c_intersection
         previous_combos = [combos_tiles_together[i][0] for i in
                            range(2 * dimension)]
+        if not all(tile_possible):  # Some tile has no possibilities!
+            return [], []
     return previous_combos, tile_possible
 
 
-def columns_recursively(first: list[int], possible: list[list[tuple[int]]],
-                        depth: int, limit: int):
-    if depth == limit:
-        pass
+def rows_recursively(dim: int, depth: int,
+                     combos: list[list[tuple[int]]], grid_possibilities):
+    # print(depth)
+    # print(grid_possibilities)
+    if dim == depth:
+        # Bottom of generators.
+        yield grid_possibilities
+    else:
+        for new_row in combos[depth]:
+            limited_possible = deepcopy(grid_possibilities)  # Copy over.
+            for index, number in enumerate(new_row, start=depth * dim):
+                # print(index)
+                limited_possible[index] = {number}  # Overwrite.
+                # And delete it from anywhere else:
+                for delete_index in range((depth + 1) * dim, dim ** 2):
+                    limited_possible[delete_index].discard(number)
+            # print(limited_possible)
+            for options in limited_possible:
+                if not options:
+                    break
+            else:  # I.e. if every tile has a possibility remaining.
+                cs_left, maybe_s = iterative_deletion(
+                    dim, limited_possible, combos
+                )
+                # print(maybe_s)
+                if not maybe_s:  # There is a tile with no possibilities, skip
+                    continue
+                elif sum(map(len, maybe_s)) == dim ** 2:
+                    yield maybe_s
+                else:
+                    yield from rows_recursively(dim, depth+1, cs_left, maybe_s)
 
 
 def possibility_collapse(grid: Square) -> Square | None:
@@ -101,24 +132,16 @@ def possibility_collapse(grid: Square) -> Square | None:
         row_possible = combos_and_tiles[q][1][r]
         column_possible = combos_and_tiles[grid.dimension + r][1][q]
         grid_possibilities.append(row_possible.intersection(column_possible))
+    combos = [combos_and_tiles[i][0] for i in range(2 * grid.dimension)]
     # Iteratively reduce the possibilities:
     remaining_combos, grid_possibilities =\
-        iterative_deletion(grid.dimension, grid_possibilities, combos_and_tiles)
+        iterative_deletion(grid.dimension, grid_possibilities, combos)
 
-    for p in remaining_combos:
-        print(len(p), p)
-    for t in grid_possibilities:
-        print(len(t))
-    for first_row in remaining_combos[0]:
-        limited_possible = grid_possibilities[:]  # Copy over.
-        for index, number in enumerate(first_row):
-            limited_possible[index] = {number}  # Overwrite.
-            # And delete it from anywhere else:
-            for delete_index in range(grid.dimension, d_sq):
-                limited_possible[delete_index].discard(number)
-        print(first_row)
-        print(limited_possible)
-
+    for solution in rows_recursively(grid.dimension, 0,
+                                     remaining_combos, grid_possibilities):
+        print(list(solution))
+        print(solution[0])
+        print(solution[0].pop())
     return
 
 
@@ -136,4 +159,4 @@ if __name__ == '__main__':
     # print(row_recursion(first_33, list(range(1, 10)), 0, 8))
     # print(row_recursion(column_order_16, list(range(1, 17)), 0, 15))
     # print(row_recursion(gmp_33, list(range(1, 10)), 0, 8))
-    print(possibility_collapse(gmp_33))
+    print(possibility_collapse(column_order_16))
