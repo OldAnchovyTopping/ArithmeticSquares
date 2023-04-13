@@ -46,6 +46,52 @@ def is_combo_doable(
     return True
 
 
+def iterative_deletion(dimension: int, tile_possible: list[set[int]],
+                       combos_and_tiles):
+    dim_squared = dimension * dimension
+    # First some index pre-work:
+    eq_indices = []
+    for i in range(dimension):
+        eq_indices.append(tuple(range(i*dimension, (i+1)*dimension)))
+    for i in range(dimension, 2 * dimension):
+        eq_indices.append(tuple(range(i-dimension, dim_squared, dimension)))
+    # Now we iteratively eliminate possible combos:
+    previous_combos = [combos_and_tiles[i][0] for i in range(2 * dimension)]
+    change_was_made = True
+    while change_was_made:
+        combos_tiles_together = []
+        change_was_made = False
+        print("Start of next iteration")
+        # print(grid_possibilities)
+        for i, equation in enumerate(previous_combos):
+            eq_combos = []
+            eq_possible = [set() for _ in range(dimension)]
+            # print(i, equation)
+            for combo in equation:
+                if is_combo_doable(combo, eq_indices[i], tile_possible):
+                    eq_combos.append(combo)
+                    for index in range(dimension):
+                        eq_possible[index].add(combo[index])
+            combos_tiles_together.append((eq_combos, eq_possible))
+        for index in range(dim_squared):
+            q, r = divmod(index, dimension)
+            row_possible: set[int] = combos_tiles_together[q][1][r]
+            col_possible: set[int] = combos_tiles_together[dimension + r][1][q]
+            r_c_intersection: set[int] = row_possible.intersection(col_possible)
+            if r_c_intersection != tile_possible[index]:
+                change_was_made = True
+            tile_possible[index] = r_c_intersection
+        previous_combos = [combos_tiles_together[i][0] for i in
+                           range(2 * dimension)]
+    return previous_combos, tile_possible
+
+
+def columns_recursively(first: list[int], possible: list[list[tuple[int]]],
+                        depth: int, limit: int):
+    if depth == limit:
+        pass
+
+
 def possibility_collapse(grid: Square) -> Square | None:
     combos_and_tiles = grid.options_in_all_equations()
     grid_possibilities = []
@@ -55,42 +101,24 @@ def possibility_collapse(grid: Square) -> Square | None:
         row_possible = combos_and_tiles[q][1][r]
         column_possible = combos_and_tiles[grid.dimension + r][1][q]
         grid_possibilities.append(row_possible.intersection(column_possible))
-    # First some index pre-work:
-    eq_indices = []
-    for i in range(grid.dimension):
-        eq_indices.append(tuple(range(i*grid.dimension, (i+1)*grid.dimension)))
-    for i in range(grid.dimension, 2 * grid.dimension):
-        eq_indices.append(tuple(range(i-grid.dimension, d_sq, grid.dimension)))
-    # Now we iteratively eliminate possible combos:
-    previous_combos = [combos_and_tiles[i][0] for i in range(2*grid.dimension)]
-    change_was_made = True
-    while change_was_made:
-        combos_tiles_together = []
-        change_was_made = False
-        print("Start of next iteration")
-        print(grid_possibilities)
-        for i, equation in enumerate(previous_combos):
-            eq_combos = []
-            eq_possible = [set() for _ in range(grid.dimension)]
-            print(i, equation)
-            for combo in equation:
-                if is_combo_doable(combo, eq_indices[i], grid_possibilities):
-                    eq_combos.append(combo)
-                    for index in range(grid.dimension):
-                        eq_possible[index].add(combo[index])
-            combos_tiles_together.append((eq_combos, eq_possible))
-        for index in range(d_sq):
-            q, r = divmod(index, grid.dimension)
-            row_possible = combos_tiles_together[q][1][r]
-            column_possible = combos_tiles_together[grid.dimension + r][1][q]
-            row_column_intersection = row_possible.intersection(column_possible)
-            if row_column_intersection != grid_possibilities[index]:
-                change_was_made = True
-            grid_possibilities[index] = row_column_intersection
-        previous_combos = [combos_tiles_together[i][0] for i in
-                           range(2 * grid.dimension)]
-    for p in previous_combos:
-        print(p)
+    # Iteratively reduce the possibilities:
+    remaining_combos, grid_possibilities =\
+        iterative_deletion(grid.dimension, grid_possibilities, combos_and_tiles)
+
+    for p in remaining_combos:
+        print(len(p), p)
+    for t in grid_possibilities:
+        print(len(t))
+    for first_row in remaining_combos[0]:
+        limited_possible = grid_possibilities[:]  # Copy over.
+        for index, number in enumerate(first_row):
+            limited_possible[index] = {number}  # Overwrite.
+            # And delete it from anywhere else:
+            for delete_index in range(grid.dimension, d_sq):
+                limited_possible[delete_index].discard(number)
+        print(first_row)
+        print(limited_possible)
+
     return
 
 
@@ -108,4 +136,4 @@ if __name__ == '__main__':
     # print(row_recursion(first_33, list(range(1, 10)), 0, 8))
     # print(row_recursion(column_order_16, list(range(1, 17)), 0, 15))
     # print(row_recursion(gmp_33, list(range(1, 10)), 0, 8))
-    print(possibility_collapse(first_33))
+    print(possibility_collapse(gmp_33))
