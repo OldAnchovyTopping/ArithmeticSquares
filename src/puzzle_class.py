@@ -113,7 +113,7 @@ class Square:
 
     def check_column(self, index: int) -> bool:
         """
-        Checks if the index-mentioned row is filled in AND
+        Checks if the index-mentioned column is filled in AND
         that it satisfies the grid equation.
 
         :param index: The  column index to look at.
@@ -181,6 +181,9 @@ class Square:
         self.entries[quotient][remainder] = value
 
     def equation_possibilities(self, index):
+        """Returns all possible combinations that index-given equation has.
+        Also returns a list of sets that signify what numbers are at least once
+        at the given position."""
         operations, target = self.equations[index]
         used_numbers = range(1, 1 + self.dimension ** 2)
         possible_combinations = []
@@ -209,6 +212,7 @@ class Square:
         return possible_combinations, tile_possibilities
 
     def options_in_all_equations(self):
+        """Returns the possibilities and tile-sets of ALL equations."""
         option_list = []
         for index in range(2 * self.dimension):
             option_list.append(self.equation_possibilities(index))

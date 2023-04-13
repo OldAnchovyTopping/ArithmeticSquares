@@ -4,15 +4,19 @@ from itertools import permutations
 
 
 def permutation_bruteforce(grid: Square) -> Square:
+    """The simplest possible algorithm. Returns ONE solution (if it exists)."""
     for perm in permutations(range(1, 1 + grid.dimension ** 2)):
         grid.change_entries(perm)
         if grid.are_all_constraints_satisfied():
             return grid
 
 
-def row_recursion(
+def primitive_row_recursion(
     grid: Square, unused: list[int], depth: int, limit: int
 ) -> Square | None:
+    """Recursive method of solution that fills the tiles row by row.
+    Whenever it fills a row/column, it checks if the equations is correct.
+    Returns ONE solution, if one exists."""
     # print(grid)
     # Base case:
     if depth == limit:
@@ -31,7 +35,7 @@ def row_recursion(
                 continue
         # If the checks pass, we recurse:
         still_unused = unused[:index] + unused[index + 1:]
-        maybe_s = row_recursion(grid, still_unused, depth + 1, limit)
+        maybe_s = primitive_row_recursion(grid, still_unused, depth + 1, limit)
         if maybe_s is not None:
             return maybe_s
     grid.single_entry_change(depth, 0)
@@ -41,6 +45,15 @@ def row_recursion(
 def is_combo_doable(
     the_combo: list[int], positions, possible: list[set[int]]
 ) -> bool:
+    """
+    Helper method of iterative_deletion; checks if all tiles in the_combo
+    have a value which is listed as possible in the tile.
+
+    :param the_combo: Asked for entries of the row/column
+    :param positions: the positions on which this combination belongs
+    :param possible: tile possibilities
+    :return: "all entries in the_combo are possible in their tiles" (True/False)
+    """
     for index, value in enumerate(the_combo):
         if value not in possible[positions[index]]:
             return False
@@ -49,6 +62,12 @@ def is_combo_doable(
 
 def iterative_deletion(dimension: int, tile_possible: list[set[int]],
                        available_combos: list[list[tuple[int]]]):
+    """Iteratively deletes possibilities.
+    First, it prunes all combos that are not doable (see above).
+    Then, based on that, it removes some tile entries, which are no longer
+    achievable through any combination.
+    This is repeated until no change is made.
+    """
     dim_squared = dimension * dimension
     # First some index pre-work:
     eq_indices = []
@@ -62,7 +81,6 @@ def iterative_deletion(dimension: int, tile_possible: list[set[int]],
     while change_was_made:
         combos_tiles_together = []
         change_was_made = False
-        # print("Start of next iteration")
         # print(tile_possible)
         # print(previous_combos)
         for i, equation in enumerate(previous_combos):
@@ -92,6 +110,13 @@ def iterative_deletion(dimension: int, tile_possible: list[set[int]],
 
 def rows_recursively(dim: int, depth: int,
                      combos: list[list[tuple[int]]], grid_possibilities):
+    """Given an ensemble of possible combos, the function recursively fills in
+    all rows.
+
+    After fixing each row, the grid_possibilities are changed to
+    reflect this change (those positions are fixed to {number}, and this number
+    is removed from all other tiles).
+    """
     # print(depth)
     # print(grid_possibilities)
     if dim == depth:
@@ -101,7 +126,6 @@ def rows_recursively(dim: int, depth: int,
         for new_row in combos[depth]:
             limited_possible = deepcopy(grid_possibilities)  # Copy over.
             for index, number in enumerate(new_row, start=depth * dim):
-                # print(index)
                 limited_possible[index] = {number}  # Overwrite.
                 # And delete it from anywhere else:
                 for delete_index in range((depth + 1) * dim, dim ** 2):
@@ -118,12 +142,19 @@ def rows_recursively(dim: int, depth: int,
                 if not maybe_s:  # There is a tile with no possibilities, skip
                     continue
                 elif sum(map(len, maybe_s)) == dim ** 2:
+                    # Already a solution, return early!
                     yield maybe_s
                 else:
                     yield from rows_recursively(dim, depth+1, cs_left, maybe_s)
 
 
-def possibility_collapse(grid: Square) -> Square | None:
+def possibility_collapse(grid: Square) -> list[Square] | Square | None:
+    """Finds ALL solutions of the given arithmetic square.
+
+    This function first calculates all possibilities in all rows/columns, then
+    iteratively reduces these options.
+
+    To finish, it recurses down the rows."""
     combos_and_tiles = grid.options_in_all_equations()
     grid_possibilities = []
     d_sq = grid.dimension ** 2
@@ -136,20 +167,29 @@ def possibility_collapse(grid: Square) -> Square | None:
     # Iteratively reduce the possibilities:
     remaining_combos, grid_possibilities =\
         iterative_deletion(grid.dimension, grid_possibilities, combos)
-
+    solution_list = []
     for solution in rows_recursively(grid.dimension, 0,
                                      remaining_combos, grid_possibilities):
-        print(list(solution))
-        print(solution[0])
-        print(solution[0].pop())
-    return
+        copied_grid = deepcopy(grid)
+        for index in range(d_sq):
+            tile_entry = solution[index].pop()
+            copied_grid.single_entry_change(index, tile_entry)
+        solution_list.append(copied_grid)
+    if not solution_list:
+        # No solutions.
+        return None
+    if len(solution_list) == 1:
+        # Exactly one solution.
+        return solution_list[0]
+    # Multiple solutions.
+    return solution_list
 
 
 if __name__ == '__main__':
     first_33 = Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"])
     order_16 = Square(4, ["++-2", "*--15", "+-*96", "--/-1",
                           "--/-1", "++-4", "*-+25", "+*/9"])
-    small = Square(2, ["+6", "+4", "+7", "+3"])
+    small = Square(2, ["+6", "+4", "+5", "+5"])
     column_order_16 = Square(4, ["--/-1", "++-4", "*-+25", "+*/9",
                                  "++-2", "*--15", "+-*96", "--/-1"])
     gmp_33 = Square(3, ["/*2", "*-1", "+-4", "/*2", "*-1", "-+8"])
@@ -159,4 +199,4 @@ if __name__ == '__main__':
     # print(row_recursion(first_33, list(range(1, 10)), 0, 8))
     # print(row_recursion(column_order_16, list(range(1, 17)), 0, 15))
     # print(row_recursion(gmp_33, list(range(1, 10)), 0, 8))
-    print(possibility_collapse(column_order_16))
+    # print(possibility_collapse(column_order_16))
