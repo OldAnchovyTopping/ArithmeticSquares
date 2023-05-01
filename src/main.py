@@ -1,4 +1,5 @@
 from puzzle_class import Square
+from solution_options import possibility_collapse
 
 
 if __name__ == '__main__':
@@ -81,5 +82,25 @@ if __name__ == '__main__':
         except AssertionError:
             print("You have not specified the correct amount of equations. "
                   "Try again, please.")
-    print(equations)
-    print(solver_object)
+    all_solutions = possibility_collapse(solver_object)
+    print("\n\n--------------------------------------------------------------")
+    if isinstance(all_solutions, list):
+        print(f"The program found {len(all_solutions)} solutions to this grid.")
+        choice = input("Would you like to see one of them [type o and press "
+                       "ENTER]\nOR\nwould you like to see all of them [type "
+                       "a and press ENTER]?")
+        while choice not in {"a", "o"}:
+            print("*** Please type either a, or o and then press ENTER. ***\n")
+            print("Would you like to see one solution [o] "
+                  "or all of them [a]?")
+            choice = input()
+        if choice == "o":
+            print(all_solutions[0])
+        else:  # See all solutions.
+            for s in all_solutions:
+                print(s)
+    elif isinstance(all_solutions, Square):
+        print("There is precisely one solution, namely this one:\n")
+        print(all_solutions)
+    else:
+        print("Sorry, there are no solutions for this grid.")
