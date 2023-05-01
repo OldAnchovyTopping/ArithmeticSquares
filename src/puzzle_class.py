@@ -45,6 +45,9 @@ class Square:
             result_str = row[minus:].rjust(self.width)
             self.print_data.append((offset_ops, result_str, int(row[minus:])))
             self.equations.append((row[:minus], int(row[minus:])))
+            for operation in row[:minus]:
+                if operation not in "+-*/":
+                    raise ValueError("Operation is not one of +-*/.")
         # Now make lists for the numbers and their pretty-printing counterparts:
         self.entries = [[0 for _ in range(dimension)] for _ in range(dimension)]
         dim_sq = dimension * dimension + 1
