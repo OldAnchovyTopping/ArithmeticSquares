@@ -167,6 +167,8 @@ def possibility_collapse(grid: Square) -> list[Square] | Square | None:
     # Iteratively reduce the possibilities:
     remaining_combos, grid_possibilities =\
         iterative_deletion(grid.dimension, grid_possibilities, combos)
+    if not grid_possibilities:  # Early break if no solutions
+        return None
     solution_list = []
     for solution in rows_recursively(grid.dimension, 0,
                                      remaining_combos, grid_possibilities):
@@ -185,6 +187,25 @@ def possibility_collapse(grid: Square) -> list[Square] | Square | None:
     return solution_list
 
 
+def given_result_list(operations: list[str], results: list[int]) -> dict:
+    assert len(operations) == len(results)
+    assert not(len(results) & 1)
+    dimension = len(results) // 2
+    result_options: set[tuple[int]] = set(permutations(results))
+    solution_dict = {}
+    for mask in result_options:
+        # print(mask)
+        true_operations = operations[:]
+        for index, number in enumerate(mask):
+            true_operations[index] = true_operations[index] + str(number)
+        # print(true_operations)
+        the_grid = Square(dimension, true_operations)
+        potential_solutions = possibility_collapse(the_grid)
+        if potential_solutions is not None:
+            solution_dict[mask] = potential_solutions
+    return solution_dict
+
+
 if __name__ == '__main__':
     first_33 = Square(3, ["+-6", "-*8", "*/3", "+-4", "-*3", "*/4"])
     order_16 = Square(4, ["++-2", "*--15", "+-*96", "--/-1",
@@ -195,8 +216,16 @@ if __name__ == '__main__':
     gmp_33 = Square(3, ["/*2", "*-1", "+-4", "/*2", "*-1", "-+8"])
     # print(permutation_bruteforce(first_33))
     # print(permutation_bruteforce(order_16))
-    # print(row_recursion(small, [1, 2, 3, 4], 0, 3))
-    # print(row_recursion(first_33, list(range(1, 10)), 0, 8))
-    # print(row_recursion(column_order_16, list(range(1, 17)), 0, 15))
-    # print(row_recursion(gmp_33, list(range(1, 10)), 0, 8))
     # print(possibility_collapse(column_order_16))
+    ops = ["**", "*+", "++", "++", "**", "*-"]
+    numbers = [18, 18, 18, 18, 20, 20]
+    # ops = ["+-", "-+", "/*", "*-", "/*", "++"]
+    # numbers = [11, 12, 12, 12, 12, 21]
+    solutions = given_result_list(ops, numbers)
+    for key, sols in solutions.items():
+        print(f"Solutions for the mask {key}:")
+        if isinstance(sols, Square):
+            print(sols)
+        else:
+            for v in sols:
+                print(v)
