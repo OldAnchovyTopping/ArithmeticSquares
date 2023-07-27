@@ -142,8 +142,11 @@ def rows_recursively(dim: int, depth: int,
                 if not maybe_s:  # There is a tile with no possibilities, skip
                     continue
                 elif sum(map(len, maybe_s)) == dim ** 2:
-                    # Already a solution, return early!
-                    yield maybe_s
+                    # Already we have a single digit everywhere.
+                    if set(map(lambda x: next(iter(x)), maybe_s)) ==\
+                            set(range(1, dim ** 2 + 1)):
+                        # Now we checked that we used all the digits.
+                        yield maybe_s
                 else:
                     yield from rows_recursively(dim, depth+1, cs_left, maybe_s)
 
